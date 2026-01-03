@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>United Award Flight Scraper</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .init-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .init-section p {
+            margin-bottom: 15px;
+            color: #555;
+        }
+
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        select, input[type="date"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+            background: white;
+        }
+
+        select:focus, input[type="date"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .search-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 15px;
+            font-size: 18px;
+        }
+
+        .results {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .results.success {
+            background: #d4edda;
+            border: 2px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .results.error {
+            background: #f8d7da;
+            border: 2px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .results.blocked {
+            background: #fff3cd;
+            border: 2px solid #ffeeba;
+            color: #856404;
+        }
+
+        .results h3 {
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+
+        .result-item {
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .result-item strong {
+            display: inline-block;
+            min-width: 120px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .status-message {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .status-message.show {
+            display: block;
+        }
+
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-message.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✈️ United Award Flight Scraper</h1>
+        <p class="subtitle">Search for United MileagePlus award flights</p>
+
+        <div class="init-section">
+            <p><strong>Step 1:</strong> Initialize the browser and log in to United.com</p>
+            <button class="btn" id="initBtn" onclick="initializeBrowser()">Initialize Browser</button>
+            <div class="status-message" id="initStatus"></div>
+        </div>
+
+        <form id="searchForm" onsubmit="searchFlights(event)">
+            <div class="form-group">
+                <label for="origin">From (Origin Airport)</label>
+                <select id="origin" name="origin" required>
+                    <option value="">Select origin airport...</option>
+                    <option value="ATL">ATL - Atlanta</option>
+                    <option value="LAX">LAX - Los Angeles</option>
+                    <option value="ORD">ORD - Chicago O'Hare</option>
+                    <option value="DFW">DFW - Dallas/Fort Worth</option>
+                    <option value="DEN">DEN - Denver</option>
+                    <option value="JFK">JFK - New York JFK</option>
+                    <option value="SFO">SFO - San Francisco</option>
+                    <option value="SEA">SEA - Seattle</option>
+                    <option value="LAS">LAS - Las Vegas</option>
+                    <option value="MCO">MCO - Orlando</option>
+                    <option value="EWR">EWR - Newark</option>
+                    <option value="CLT">CLT - Charlotte</option>
+                    <option value="PHX">PHX - Phoenix</option>
+                    <option value="IAH">IAH - Houston</option>
+                    <option value="MIA">MIA - Miami</option>
+                    <option value="BOS">BOS - Boston</option>
+                    <option value="MSP">MSP - Minneapolis</option>
+                    <option value="FLL">FLL - Fort Lauderdale</option>
+                    <option value="DTW">DTW - Detroit</option>
+                    <option value="PHL">PHL - Philadelphia</option>
+                    <option value="LGA">LGA - New York LaGuardia</option>
+                    <option value="BWI">BWI - Baltimore</option>
+                    <option value="SLC">SLC - Salt Lake City</option>
+                    <option value="SAN">SAN - San Diego</option>
+                    <option value="DCA">DCA - Washington Reagan</option>
+                    <option value="TPA">TPA - Tampa</option>
+                    <option value="PDX">PDX - Portland</option>
+                    <option value="HNL">HNL - Honolulu</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="destination">To (Destination Airport)</label>
+                <select id="destination" name="destination" required>
+                    <option value="">Select destination airport...</option>
+                    <option value="ATL">ATL - Atlanta</option>
+                    <option value="LAX">LAX - Los Angeles</option>
+                    <option value="ORD">ORD - Chicago O'Hare</option>
+                    <option value="DFW">DFW - Dallas/Fort Worth</option>
+                    <option value="DEN">DEN - Denver</option>
+                    <option value="JFK">JFK - New York JFK</option>
+                    <option value="SFO">SFO - San Francisco</option>
+                    <option value="SEA">SEA - Seattle</option>
+                    <option value="LAS">LAS - Las Vegas</option>
+                    <option value="MCO">MCO - Orlando</option>
+                    <option value="EWR">EWR - Newark</option>
+                    <option value="CLT">CLT - Charlotte</option>
+                    <option value="PHX">PHX - Phoenix</option>
+                    <option value="IAH">IAH - Houston</option>
+                    <option value="MIA">MIA - Miami</option>
+                    <option value="BOS">BOS - Boston</option>
+                    <option value="MSP">MSP - Minneapolis</option>
+                    <option value="FLL">FLL - Fort Lauderdale</option>
+                    <option value="DTW">DTW - Detroit</option>
+                    <option value="PHL">PHL - Philadelphia</option>
+                    <option value="LGA">LGA - New York LaGuardia</option>
+                    <option value="BWI">BWI - Baltimore</option>
+                    <option value="SLC">SLC - Salt Lake City</option>
+                    <option value="SAN">SAN - San Diego</option>
+                    <option value="DCA">DCA - Washington Reagan</option>
+                    <option value="TPA">TPA - Tampa</option>
+                    <option value="PDX">PDX - Portland</option>
+                    <option value="HNL">HNL - Honolulu</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="date">Departure Date</label>
+                <input type="date" id="date" name="date" required>
+            </div>
+
+            <button type="submit" class="btn search-btn" id="searchBtn">Search Flights</button>
+        </form>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Scraping flight data... This may take 10-20 seconds.</p>
+        </div>
+
+        <div class="results" id="results"></div>
+    </div>
+
+    <script>
+        // Set minimum date to today
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('date').setAttribute('min', today);
+        document.getElementById('date').value = today;
+
+        async function initializeBrowser() {
+            const btn = document.getElementById('initBtn');
+            const status = document.getElementById('initStatus');
+
+            btn.disabled = true;
+            btn.textContent = 'Initializing...';
+            status.className = 'status-message';
+            status.textContent = '';
+
+            try {
+                const response = await fetch('/init-driver', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    status.className = 'status-message success show';
+                    status.textContent = '✓ Browser initialized! Please log in to United.com in the Chrome window, then use the form below to search.';
+                    btn.textContent = 'Browser Ready ✓';
+                } else {
+                    status.className = 'status-message error show';
+                    status.textContent = '✗ Error: ' + data.message;
+                    btn.disabled = false;
+                    btn.textContent = 'Initialize Browser';
+                }
+            } catch (error) {
+                status.className = 'status-message error show';
+                status.textContent = '✗ Error: ' + error.message;
+                btn.disabled = false;
+                btn.textContent = 'Initialize Browser';
+            }
+        }
+
+        async function searchFlights(event) {
+            event.preventDefault();
+
+            const origin = document.getElementById('origin').value;
+            const destination = document.getElementById('destination').value;
+            const date = document.getElementById('date').value;
+
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('searchBtn').disabled = true;
+
+            try {
+                const response = await fetch('/scrape', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        origin: origin,
+                        destination: destination,
+                        date: date
+                    })
+                });
+
+                const data = await response.json();
+
+                // Hide loading
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('searchBtn').disabled = false;
+
+                // Display results
+                displayResults(data);
+
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('searchBtn').disabled = false;
+
+                const resultsDiv = document.getElementById('results');
+                resultsDiv.className = 'results error';
+                resultsDiv.innerHTML = `
+                    <h3>❌ Error</h3>
+                    <p>${error.message}</p>
+                `;
+                resultsDiv.style.display = 'block';
+            }
+        }
+
+        function displayResults(data) {
+            const resultsDiv = document.getElementById('results');
+
+            if (data.error) {
+                resultsDiv.className = 'results error';
+                resultsDiv.innerHTML = `
+                    <h3>❌ Error</h3>
+                    <p>${data.error}</p>
+                `;
+            } else if (data.flights_found === 'BLOCKED') {
+                resultsDiv.className = 'results blocked';
+                resultsDiv.innerHTML = `
+                    <h3>⚠️ Request Blocked</h3>
+                    <p>United.com blocked the request. Please make sure you're logged in to United.com in the Chrome browser window.</p>
+                    <div class="result-item">
+                        <strong>Route:</strong> ${data.origin} → ${data.destination}
+                    </div>
+                    <div class="result-item">
+                        <strong>Date:</strong> ${data.date}
+                    </div>
+                `;
+            } else if (data.flights_found === 'ERROR') {
+                resultsDiv.className = 'results error';
+                resultsDiv.innerHTML = `
+                    <h3>❌ Scraping Error</h3>
+                    <p>An error occurred while scraping. Check the console for details.</p>
+                `;
+            } else {
+                resultsDiv.className = 'results success';
+                resultsDiv.innerHTML = `
+                    <h3>✅ Flight Data Retrieved</h3>
+                    <div class="result-item">
+                        <strong>Route:</strong> ${data.origin} → ${data.destination}
+                    </div>
+                    <div class="result-item">
+                        <strong>Date:</strong> ${data.date}
+                    </div>
+                    <div class="result-item">
+                        <strong>Flights Found:</strong> ${data.flights_found}
+                    </div>
+                    <div class="result-item">
+                        <strong>Minimum Miles:</strong> ${data.min_miles === 'N/A' ? 'No award flights available' : data.min_miles.toLocaleString() + ' miles'}
+                    </div>
+                    <div class="result-item">
+                        <strong>Scraped At:</strong> ${new Date(data.scraped_at).toLocaleString()}
+                    </div>
+                `;
+            }
+
+            resultsDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
